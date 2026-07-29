@@ -3,7 +3,7 @@
 > **B.Tech Final Year Project** — Real-time IoT energy monitoring with AI-powered demand forecasting, fault detection, and automated optimization.
 
 ## 🔗 Live Dashboard
-**[👉 Open Dashboard](https://nishi17c.github.io/Mproject/)**
+**[👉 Open Dashboard](https://nishi17c.github.io/IoT-and-AI-Enabled-Green-Campus-Energy-Management-System/)**
 
 ---
 
