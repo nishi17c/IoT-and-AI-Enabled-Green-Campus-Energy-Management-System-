@@ -73,13 +73,13 @@
 // ═══════════════════════════════════════════════════════════════
 
 // ── WiFi Credentials ──────────────────────────────────────────
-const char* WIFI_SSID     = "YOUR_WIFI_NAME";     // <-- Change this
-const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD"; // <-- Change this
+const char* WIFI_SSID     = "OPPO F29 5G j7j4";     // <-- Change this
+const char* WIFI_PASSWORD = "12345678"; // <-- Change this
 
 // ── MQTT Broker ───────────────────────────────────────────────
 // Run Mosquitto on your laptop. Find laptop IP: run "ipconfig" in CMD
 // Look for IPv4 Address under WiFi adapter (e.g. 192.168.1.5)
-const char* MQTT_SERVER   = "192.168.1.5";  // <-- Your laptop's IP
+const char* MQTT_SERVER   = "10.29.221.43";  // <-- Your laptop's IP
 const int   MQTT_PORT     = 1883;
 const char* MQTT_USER     = "";             // Leave blank if no auth
 const char* MQTT_PASSWORD = "";             // Leave blank if no auth
@@ -648,6 +648,7 @@ void setup() {
 
   // ── Pin Modes ─────────────────────────────────────────────
   pinMode(PIN_PIR,   INPUT);
+  pinMode(PIN_DHT,   INPUT_PULLUP); // Internal pull-up = no external 10kΩ resistor needed!
   pinMode(PIN_RELAY, OUTPUT);
   digitalWrite(PIN_RELAY, HIGH);  // Relay OFF at startup (active LOW)
 
