@@ -22,8 +22,10 @@ Access points:
 # STARTUP BANNER — printed before any imports so it's visible
 # even if an import fails.
 # ============================================================
+import sys
+sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 print("\n" + "=" * 60)
-print("  🌿  Green Campus Energy Management System  🌿")
+print("  Green Campus Energy Management System")
 print("=" * 60)
 print("  Dashboard  : http://localhost:8000")
 print("  API Docs   : http://localhost:8000/docs")

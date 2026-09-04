@@ -937,23 +937,39 @@ new Chart(document.getElementById('pieChart'), {
   }
 });
 
-// ── LIVE DATA SIMULATION ────────────────────────────────────
-// Replace updateLive() body with real WebSocket/MQTT data when hardware is ready
-let energyAcc = 8.74;
+// ── REAL DATA via WebSocket ─────────────────────────────────
+// Connects to Python backend at ws://localhost:8000/ws
+// Falls back to simulation if backend is offline
+
+let energyAcc   = 8.74;
+let useRealData = false;   // flips true when WebSocket connects
+let wsRetries   = 0;
 
 function rand(min, max) { return +(min + Math.random() * (max - min)).toFixed(2); }
 
-function updateLive() {
-  const voltage = rand(228, 233);
-  const current = rand(4.2, 5.6);
-  const pf      = rand(0.88, 0.95);
-  const power   = +((voltage * current * pf) / 1000).toFixed(3);
-  const freq    = rand(49.8, 50.2);
-  const temp    = rand(27.5, 29.5);
-  const hum     = Math.floor(rand(58, 68));
-  energyAcc    += power / 1800;
-  const co2     = +(energyAcc * 0.82).toFixed(2);
+// ── Apply data to all metric cards ────────────────────────
+function applyData(d) {
+  // Energy meter (PZEM) — use simulated if PZEM not connected
+  const voltage = d.voltage    ?? rand(228, 233);
+  const current = d.current    ?? rand(4.2, 5.6);
+  const pf      = d.power_factor ?? rand(0.88, 0.95);
+  const power   = d.power_kw   ?? +((voltage * current * pf) / 1000).toFixed(3);
+  const freq    = d.frequency  ?? rand(49.8, 50.2);
+  const energy  = d.energy_kwh ?? energyAcc;
 
+  // Environment (real from DHT11/PIR)
+  const temp    = d.temperature ?? rand(27.5, 29.5);
+  const hum     = d.humidity    ?? Math.floor(rand(58, 68));
+  const motion  = d.motion;
+  const light   = d.light_pct;
+
+  // Accumulate energy if PZEM not connected
+  if (!d.power_kw) energyAcc += power / 1800;
+  else             energyAcc  = energy;
+
+  const co2 = +(energyAcc * 0.82).toFixed(2);
+
+  // Update metric cards
   document.getElementById('valVoltage').textContent = voltage;
   document.getElementById('valCurrent').textContent = current;
   document.getElementById('valPF').textContent      = pf;
@@ -964,29 +980,103 @@ function updateLive() {
   document.getElementById('valEnergy').textContent  = energyAcc.toFixed(2);
   document.getElementById('valCost').textContent    = (energyAcc * 5).toFixed(2);
   document.getElementById('valCO2').textContent     = co2;
-  document.getElementById('co2Big').textContent     = co2;
-  document.getElementById('co2Pct').textContent     = Math.round((co2 / 6) * 100) + '%';
+  if (document.getElementById('co2Big'))  document.getElementById('co2Big').textContent  = co2;
+  if (document.getElementById('co2Pct'))  document.getElementById('co2Pct').textContent  = Math.round((co2/6)*100)+'%';
 
-  // Trend
+  // Trends
   const pHigh = power > 1.3;
-  document.getElementById('trendP').textContent  = pHigh ? '↑ High' : '✓ Normal';
-  document.getElementById('trendP').className    = 'card-trend ' + (pHigh ? 'trend-up' : 'trend-ok');
+  document.getElementById('trendP').textContent = pHigh ? '↑ High' : '✓ Normal';
+  document.getElementById('trendP').className   = 'card-trend ' + (pHigh ? 'trend-up' : 'trend-ok');
   const vHigh = voltage > 232;
-  document.getElementById('trendV').textContent  = vHigh ? '⚠ High' : '✓ Normal';
-  document.getElementById('trendV').className    = 'card-trend ' + (vHigh ? 'trend-up' : 'trend-ok');
+  document.getElementById('trendV').textContent = vHigh ? '⚠ High' : '✓ Normal';
+  document.getElementById('trendV').className   = 'card-trend ' + (vHigh ? 'trend-up' : 'trend-ok');
 
-  // Update live chart
+  // Occupancy badge update
+  if (motion !== undefined) {
+    const badge = document.querySelector('.badge-occupied, .badge-empty');
+    if (badge) {
+      badge.textContent = motion ? '● Occupied' : '○ Empty';
+      badge.style.color = motion ? 'var(--green)' : 'var(--orange)';
+    }
+  }
+
+  // Live chart
   powerData.shift(); powerData.push(power);
   powerChart.data.datasets[0].data = [...powerData];
   powerChart.update();
-
-  // Update node bar 1
   nodeChart.data.datasets[0].data[0] = Math.round(power * 1000);
   nodeChart.update();
+  if (document.getElementById('n1p')) document.getElementById('n1p').textContent = Math.round(power * 1000);
+}
 
-  document.getElementById('n1p').textContent = Math.round(power * 1000);
+// ── Simulation fallback ────────────────────────────────────
+function updateLive() {
+  if (useRealData) return;   // skip simulation when real data is flowing
+  applyData({});             // empty dict → all fields use simulated values
 }
 setInterval(updateLive, 2000);
+
+// ── WebSocket Connection ───────────────────────────────────
+function connectWebSocket() {
+  const WS_URL = 'ws://localhost:8000/ws';
+  let ws;
+
+  try {
+    ws = new WebSocket(WS_URL);
+  } catch(e) {
+    console.warn('[WS] Cannot create WebSocket:', e);
+    return;
+  }
+
+  ws.onopen = () => {
+    console.log('[WS] Connected to backend!');
+    useRealData = true;
+    wsRetries   = 0;
+    // Update status indicator
+    const dot = document.querySelector('.live-dot');
+    if (dot) dot.style.background = 'var(--green)';
+    const liveText = document.getElementById('liveText');
+    if (liveText) liveText.textContent = 'LIVE (Real)';
+  };
+
+  ws.onmessage = (event) => {
+    try {
+      const payload = JSON.parse(event.data);
+      // Backend sends: { "node1": {...readings...}, "node2": {...} }
+      // Use node1 data for primary display
+      const nodes   = Object.keys(payload);
+      if (nodes.length === 0) return;
+
+      const node1data = payload['node1'] || payload[nodes[0]];
+      if (node1data) applyData(node1data);
+
+      // Update node status badges
+      nodes.forEach((nid, i) => {
+        const statusEl = document.getElementById(`node${i+1}status`);
+        if (statusEl) statusEl.textContent = 'Online';
+      });
+
+    } catch(e) {
+      console.warn('[WS] Parse error:', e);
+    }
+  };
+
+  ws.onerror = (e) => {
+    console.warn('[WS] Error — backend may be offline. Using simulation.');
+    useRealData = false;
+  };
+
+  ws.onclose = () => {
+    useRealData = false;
+    console.log('[WS] Disconnected. Reconnecting in 5s...');
+    wsRetries++;
+    setTimeout(connectWebSocket, Math.min(5000 * wsRetries, 30000));
+  };
+}
+
+// Start WebSocket connection
+connectWebSocket();
+
 
 // ── RELAY CONTROL ────────────────────────────────────────────
 function toggleRelay(id, name) {
