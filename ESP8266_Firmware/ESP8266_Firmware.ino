@@ -387,14 +387,13 @@ void readSensors() {
   motionDetected = digitalRead(PIN_PIR) == HIGH;
   Serial.printf("[PIR]   Motion = %s\n", motionDetected ? "YES" : "No");
 
-  // ── 4. LDR — Light Intensity ───────────────────────────────
-  ldrRaw       = analogRead(PIN_LDR);           // 0 (dark) to 1023 (bright)
-  lightPercent = map(ldrRaw, 0, 1023, 100, 0);  // Invert: 0=dark → 100%dark
-  // NOTE: LDR resistance increases in dark → voltage at A0 decreases
-  // lightPercent here = darkness level (100% = very dark, 0% = very bright)
-  // Rename to "darknessPercent" if you prefer
-  Serial.printf("[LDR]   Raw=%d | Light=%d%%\n", ldrRaw, lightPercent);
+  // ── 4. LDR — Not installed in this build ──────────────────
+  // LDR sensor removed from circuit — set to 0
+  ldrRaw       = 0;
+  lightPercent = 0;
+  // Serial.printf("[LDR] Not connected\n");  // Uncomment to debug
 }
+
 
 
 // ═══════════════════════════════════════════════════════════════
