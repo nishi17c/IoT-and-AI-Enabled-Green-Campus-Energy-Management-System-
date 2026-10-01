@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # MQTT Configuration
 # ---------------------------------------------------------------------------
-MQTT_HOST      = "localhost"
+MQTT_HOST      = "broker.emqx.io"
 MQTT_PORT      = 1883
 MQTT_CLIENT_ID = "ems-backend"
 MQTT_KEEPALIVE = 60          # seconds between ping packets
@@ -285,7 +285,8 @@ def publish_relay_command(node_id: str, command: str):
         return
 
     topic   = f"campus/{node_id}/relay"
-    payload = json.dumps({"command": command, "ts": datetime.now().isoformat()})
+    # Send plain command string ("on", "off", "toggle") for direct firmware string match
+    payload = command.lower()
 
     result = _client.publish(topic, payload, qos=1, retain=False)
     if result.rc == mqtt.MQTT_ERR_SUCCESS:
@@ -294,7 +295,7 @@ def publish_relay_command(node_id: str, command: str):
         logger.error("Failed to publish relay command to %s (rc=%d)", node_id, result.rc)
 
 
-def start_mqtt_thread():
+def start_mqtt_thread(broker="broker.emqx.io", port=1883):
     """
     Initialise the paho-mqtt client and start the network loop in a
     background daemon thread.  Call once from server startup.

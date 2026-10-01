@@ -130,6 +130,15 @@ async def startup_event():
     """Initialise the database and start the MQTT background thread."""
     logger.info("Starting up Green Campus EMS server…")
     database.init_db()
+
+    # Automatically start Wi-Fi MQTT bridge so external NodeMCU can connect
+    try:
+        import mqtt_bridge
+        # No bridge needed — we are using a public cloud broker (broker.emqx.io)
+        # mqtt_bridge.start_bridge_thread()
+    except Exception as e:
+        logger.warning("Could not start MQTT bridge: %s", e)
+
     mqtt_client.start_mqtt_thread()
 
     # Launch the WebSocket broadcaster as a background task
@@ -166,6 +175,7 @@ def _build_snapshot() -> dict:
     status_map = {s["node_id"]: s for s in statuses}
 
     nodes = []
+    nodes_by_id = {}
     all_ids = set(live.keys()) | set(status_map.keys())
     for nid in sorted(all_ids):
         entry = {}
@@ -173,12 +183,17 @@ def _build_snapshot() -> dict:
         entry.update(live.get(nid, {}))         # Override/add with live data
         entry["node_id"] = nid
         nodes.append(entry)
+        nodes_by_id[nid] = entry
 
-    return {
-        "type":      "update",
-        "timestamp": datetime.now().isoformat(),
-        "nodes":     nodes,
+    snapshot = {
+        "type":        "update",
+        "timestamp":   datetime.now().isoformat(),
+        "nodes":       nodes,
+        "nodes_by_id": nodes_by_id,
     }
+    # Attach each node directly by ID (e.g. payload['node1'])
+    snapshot.update(nodes_by_id)
+    return snapshot
 
 
 # ---------------------------------------------------------------------------
@@ -392,9 +407,13 @@ async def health_check():
 # Static — serve the frontend dashboard
 # ---------------------------------------------------------------------------
 
-# Resolve path to the index.html one level above backend/
 _FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 _INDEX_HTML   = os.path.join(_FRONTEND_DIR, "index.html")
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    from fastapi import Response
+    return Response(status_code=204)
 
 
 @app.get("/", include_in_schema=False)

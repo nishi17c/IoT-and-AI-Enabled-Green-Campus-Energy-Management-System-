@@ -3,1012 +3,640 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Green Campus EMS | IoT & AI Energy Dashboard</title>
-  <meta name="description" content="Real-time IoT and AI enabled energy management dashboard for green campus monitoring, fault detection, and demand forecasting." />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <title>Green Campus Energy Monitor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-
   <style>
-    :root {
-      --bg-primary: #080c14;
-      --bg-card: rgba(15, 23, 42, 0.85);
-      --bg-card2: rgba(20, 30, 55, 0.7);
-      --border: rgba(56, 189, 248, 0.12);
-      --border-glow: rgba(56, 189, 248, 0.35);
-      --cyan: #22d3ee;
-      --cyan-dim: rgba(34, 211, 238, 0.15);
-      --purple: #a78bfa;
-      --purple-dim: rgba(167, 139, 250, 0.15);
-      --green: #4ade80;
-      --green-dim: rgba(74, 222, 128, 0.15);
-      --orange: #fb923c;
-      --orange-dim: rgba(251, 146, 60, 0.15);
-      --red: #f87171;
-      --red-dim: rgba(248, 113, 113, 0.15);
-      --yellow: #facc15;
-      --yellow-dim: rgba(250, 204, 21, 0.15);
-      --text-primary: #e2e8f0;
-      --text-secondary: #94a3b8;
-      --text-muted: #475569;
-      --font: 'Inter', sans-serif;
-      --mono: 'JetBrains Mono', monospace;
-    }
-
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: var(--font);
-      background: var(--bg-primary);
-      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+      background: #f0f4f8;
+      color: #1a202c;
       min-height: 100vh;
-      overflow-x: hidden;
     }
 
-    body::before {
-      content: '';
-      position: fixed;
-      top: -200px; left: -200px;
-      width: 600px; height: 600px;
-      background: radial-gradient(circle, rgba(34,211,238,0.07) 0%, transparent 70%);
-      pointer-events: none; z-index: 0;
-      animation: orbFloat 8s ease-in-out infinite alternate;
+    /* ── HEADER ─────────────────────────────────────── */
+    header {
+      background: #1a6b3c;
+      color: white;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
-    body::after {
-      content: '';
-      position: fixed;
-      bottom: -200px; right: -100px;
-      width: 500px; height: 500px;
-      background: radial-gradient(circle, rgba(167,139,250,0.07) 0%, transparent 70%);
-      pointer-events: none; z-index: 0;
-      animation: orbFloat 10s ease-in-out infinite alternate-reverse;
+    .header-left { display: flex; align-items: center; gap: 10px; }
+    .header-icon { font-size: 26px; }
+    .header-title { font-size: 18px; font-weight: 700; line-height: 1.2; }
+    .header-sub   { font-size: 11px; opacity: 0.75; }
+    .status-dot-wrap { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; }
+    .status-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: #ff6b6b;
+      animation: blink 1.5s ease-in-out infinite;
     }
-    @keyframes orbFloat {
-      from { transform: translate(0, 0); }
-      to   { transform: translate(40px, 40px); }
+    .status-dot.live { background: #51cf66; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* ── MAIN CONTENT ────────────────────────────────── */
+    main { padding: 16px; max-width: 700px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+
+    /* ── SECTION TITLE ───────────────────────────────── */
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #718096;
+      margin-bottom: 4px;
     }
 
-    /* TOPBAR */
-    .topbar {
-      position: sticky; top: 0; z-index: 100;
-      background: rgba(8, 12, 20, 0.92);
-      backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--border);
-      padding: 0 28px;
-      display: flex; align-items: center; justify-content: space-between;
-      height: 64px;
-    }
-    .topbar-left { display: flex; align-items: center; gap: 14px; }
-    .logo-icon {
-      width: 38px; height: 38px;
-      background: linear-gradient(135deg, var(--cyan), var(--purple));
-      border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 20px;
-      box-shadow: 0 0 20px rgba(34,211,238,0.3);
-    }
-    .logo-text { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
-    .logo-text span { color: var(--cyan); }
-    .logo-sub { font-size: 11px; color: var(--text-muted); font-weight: 400; margin-top: 1px; }
-
-    .topbar-right { display: flex; align-items: center; gap: 16px; }
-    .live-badge {
-      display: flex; align-items: center; gap: 7px;
-      background: var(--green-dim);
-      border: 1px solid rgba(74,222,128,0.25);
-      border-radius: 20px; padding: 5px 12px;
-      font-size: 12px; font-weight: 600; color: var(--green);
-    }
-    .live-dot {
-      width: 7px; height: 7px;
-      background: var(--green); border-radius: 50%;
-      animation: pulse 1.5s ease-in-out infinite;
-    }
-    @keyframes pulse {
-      0%,100% { box-shadow: 0 0 0 0 rgba(74,222,128,0.7); }
-      50%      { box-shadow: 0 0 0 6px rgba(74,222,128,0); }
-    }
-    .time-display {
-      font-family: var(--mono);
-      font-size: 13px; color: var(--text-secondary);
-      background: var(--bg-card2); border: 1px solid var(--border);
-      border-radius: 8px; padding: 6px 12px;
-    }
-
-    /* NAV TABS */
-    .nav-tabs {
-      display: flex; gap: 4px;
-      padding: 16px 28px 0;
-      border-bottom: 1px solid var(--border);
-      position: relative; z-index: 1;
-      overflow-x: auto;
-    }
-    .nav-tab {
-      padding: 10px 18px;
-      border-radius: 10px 10px 0 0;
-      font-size: 13px; font-weight: 500;
-      cursor: pointer; border: 1px solid transparent;
-      border-bottom: none; color: var(--text-muted);
-      transition: all 0.2s;
-      background: transparent; white-space: nowrap;
-    }
-    .nav-tab:hover { color: var(--text-secondary); background: var(--bg-card2); }
-    .nav-tab.active {
-      color: var(--cyan);
-      background: var(--bg-card2);
-      border-color: var(--border);
-    }
-    .tab-icon { margin-right: 7px; }
-
-    /* MAIN */
-    .main { padding: 24px 28px 40px; position: relative; z-index: 1; }
-    .page { display: none; }
-    .page.active { display: block; }
-
-    .section-label {
-      font-size: 11px; font-weight: 600;
-      text-transform: uppercase; letter-spacing: 1.5px;
-      color: var(--text-muted); margin-bottom: 12px;
-    }
-
-    /* CARD */
+    /* ── CARD ────────────────────────────────────────── */
     .card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      backdrop-filter: blur(12px);
-      padding: 20px;
-      transition: border-color 0.3s, box-shadow 0.3s;
-    }
-    .card:hover {
-      border-color: var(--border-glow);
-      box-shadow: 0 0 30px rgba(34,211,238,0.05);
+      background: white;
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
     }
 
-    /* METRIC CARDS */
-    .metrics-grid {
+    /* ── POWER READINGS GRID ─────────────────────────── */
+    .readings-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
     }
-    .metric-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 20px;
-      position: relative; overflow: hidden;
-      transition: all 0.3s;
-    }
-    .metric-card::before {
-      content: '';
-      position: absolute; top: 0; left: 0; right: 0;
-      height: 2px;
-      background: var(--accent-color, var(--cyan));
-      opacity: 0.7;
-    }
-    .metric-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-      border-color: var(--border-glow);
-    }
-    .metric-card .card-icon {
-      font-size: 20px; margin-bottom: 12px;
-      width: 42px; height: 42px;
-      background: var(--icon-bg, var(--cyan-dim));
+    .reading-card {
+      background: #f7fafc;
       border-radius: 12px;
-      display: flex; align-items: center; justify-content: center;
+      padding: 14px 10px;
+      text-align: center;
+      border: 1.5px solid #e2e8f0;
     }
-    .metric-card .card-label {
-      font-size: 11px; font-weight: 600;
-      text-transform: uppercase; letter-spacing: 1px;
-      color: var(--text-muted); margin-bottom: 6px;
-    }
-    .metric-card .card-value {
-      font-family: var(--mono);
-      font-size: 26px; font-weight: 700;
-      color: var(--accent-color, var(--cyan));
-      line-height: 1;
-    }
-    .metric-card .card-unit {
-      font-size: 13px; font-weight: 400;
-      color: var(--text-secondary); margin-left: 4px;
-    }
-    .metric-card .card-sub {
-      font-size: 11px; color: var(--text-muted); margin-top: 8px;
-    }
-    .metric-card .card-trend {
-      position: absolute; top: 16px; right: 16px;
-      font-size: 10px; font-weight: 600; padding: 3px 8px;
-      border-radius: 20px;
-    }
-    .trend-up  { background: var(--red-dim);   color: var(--red); }
-    .trend-down{ background: var(--green-dim);  color: var(--green); }
-    .trend-ok  { background: var(--green-dim);  color: var(--green); }
+    .reading-icon  { font-size: 22px; margin-bottom: 6px; }
+    .reading-value { font-size: 24px; font-weight: 800; line-height: 1; color: #1a202c; }
+    .reading-unit  { font-size: 12px; font-weight: 600; color: #718096; }
+    .reading-label { font-size: 11px; color: #a0aec0; margin-top: 4px; }
 
-    /* STATUS BAR */
-    .status-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 24px; }
-    .status-pill {
-      display: flex; align-items: center; gap: 8px;
-      background: var(--bg-card2); border: 1px solid var(--border);
-      border-radius: 10px; padding: 7px 13px;
-      font-size: 12px; font-weight: 500;
-    }
-    .status-pill .dot { width: 8px; height: 8px; border-radius: 50%; }
-
-    /* CHARTS */
-    .charts-grid {
+    /* ── ENVIRONMENT ROW ─────────────────────────────── */
+    .env-grid {
       display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 16px; margin-bottom: 24px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
     }
-    .chart-header {
-      display: flex; align-items: flex-start; justify-content: space-between;
-      margin-bottom: 16px;
+    .env-card {
+      border-radius: 12px;
+      padding: 14px 10px;
+      text-align: center;
+      border: 1.5px solid transparent;
     }
-    .chart-title { font-size: 14px; font-weight: 600; }
-    .chart-subtitle { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-    .chart-badge { font-size: 11px; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
+    .env-card.temp  { background: #fff5f5; border-color: #fed7d7; }
+    .env-card.hum   { background: #ebf8ff; border-color: #bee3f8; }
+    .env-card.pir   { background: #f0fff4; border-color: #c6f6d5; }
+    .env-card.pir.motion { background: #fff8e1; border-color: #ffe082; }
+    .env-icon  { font-size: 22px; margin-bottom: 6px; }
+    .env-value { font-size: 22px; font-weight: 800; color: #1a202c; line-height: 1; }
+    .env-unit  { font-size: 11px; font-weight: 600; color: #718096; }
+    .env-label { font-size: 11px; color: #a0aec0; margin-top: 4px; }
 
-    /* BOTTOM GRID */
-    .bottom-grid {
+    /* ── ENERGY SUMMARY ──────────────────────────────── */
+    .energy-row {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 16px; margin-bottom: 24px;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
     }
+    .energy-box {
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+    .energy-box.kwh  { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+    .energy-box.cost { background: linear-gradient(135deg, #11998e, #38ef7d); color: white; }
+    .energy-big   { font-size: 28px; font-weight: 800; }
+    .energy-small { font-size: 12px; opacity: 0.85; margin-top: 4px; }
 
-    /* ALERTS */
-    .alert-list { display: flex; flex-direction: column; gap: 10px; }
-    .alert-item {
-      display: flex; align-items: flex-start; gap: 12px;
-      padding: 12px 14px; border-radius: 10px; border: 1px solid;
-      animation: slideIn 0.3s ease;
+    /* ── RELAY CONTROL ───────────────────────────────── */
+    .relay-list { display: flex; flex-direction: column; gap: 10px; }
+    .relay-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-radius: 12px;
+      border: 1.5px solid #e2e8f0;
+      background: #f7fafc;
+      gap: 10px;
     }
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateX(-10px); }
-      to   { opacity: 1; transform: translateX(0); }
-    }
-    .alert-item.warn  { background: var(--yellow-dim); border-color: rgba(250,204,21,0.2); }
-    .alert-item.error { background: var(--red-dim);    border-color: rgba(248,113,113,0.2); }
-    .alert-item.info  { background: var(--cyan-dim);   border-color: rgba(34,211,238,0.2); }
-    .alert-item.ok    { background: var(--green-dim);  border-color: rgba(74,222,128,0.2); }
-    .alert-icon { font-size: 18px; margin-top: 1px; flex-shrink: 0; }
-    .alert-title { font-size: 13px; font-weight: 600; }
-    .alert-desc  { font-size: 11px; color: var(--text-secondary); margin-top: 3px; line-height: 1.5; }
-    .alert-time  { font-size: 10px; color: var(--text-muted); margin-top: 5px; font-family: var(--mono); }
+    .relay-info { flex: 1; min-width: 0; }
+    .relay-name { font-size: 15px; font-weight: 700; color: #2d3748; }
+    .relay-desc { font-size: 12px; color: #718096; margin-top: 2px; }
 
-    /* RELAY */
-    .relay-grid { display: flex; flex-direction: column; gap: 12px; }
-    .relay-item {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 12px 14px;
-      background: var(--bg-card2); border: 1px solid var(--border);
+    /* Big ON/OFF button */
+    .relay-btn {
+      flex-shrink: 0;
+      min-width: 80px;
+      padding: 10px 18px;
+      border: none;
+      border-radius: 50px;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.04em;
+    }
+    .relay-btn.on  { background: #48bb78; color: white; box-shadow: 0 3px 10px rgba(72,187,120,0.4); }
+    .relay-btn.off { background: #e2e8f0; color: #718096; }
+    .relay-btn:active { transform: scale(0.95); }
+    .relay-row.active { background: #f0fff4; border-color: #9ae6b4; }
+
+    /* ── POWER CHART ─────────────────────────────────── */
+    .chart-label { font-size: 13px; color: #718096; margin-bottom: 12px; }
+
+    /* ── ALERTS ──────────────────────────────────────── */
+    .alerts-list { display: flex; flex-direction: column; gap: 8px; }
+    .alert-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 14px;
       border-radius: 10px;
+      font-size: 13px;
     }
-    .relay-name { font-size: 13px; font-weight: 500; }
-    .relay-loc  { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-    .relay-toggle {
-      width: 46px; height: 26px;
-      background: var(--text-muted);
-      border-radius: 13px; cursor: pointer;
-      position: relative; transition: background 0.3s;
-      border: none; outline: none; flex-shrink: 0;
-    }
-    .relay-toggle.on { background: var(--green); box-shadow: 0 0 12px rgba(74,222,128,0.4); }
-    .relay-toggle::after {
-      content: '';
-      position: absolute; top: 3px; left: 3px;
-      width: 20px; height: 20px;
-      background: white; border-radius: 50%;
-      transition: transform 0.3s;
-    }
-    .relay-toggle.on::after { transform: translateX(20px); }
+    .alert-pill.warn  { background: #fffbeb; border: 1.5px solid #fbd38d; }
+    .alert-pill.error { background: #fff5f5; border: 1.5px solid #feb2b2; }
+    .alert-pill.ok    { background: #f0fff4; border: 1.5px solid #9ae6b4; }
+    .alert-icon { font-size: 18px; flex-shrink: 0; }
+    .alert-text { font-weight: 600; color: #2d3748; }
+    .alert-time { font-size: 11px; color: #a0aec0; margin-left: auto; flex-shrink: 0; }
+    .no-alerts  { text-align: center; padding: 24px; color: #a0aec0; font-size: 14px; }
 
-    /* AI RECS */
-    .ai-list { display: flex; flex-direction: column; gap: 10px; }
-    .ai-item {
-      padding: 12px 14px;
-      background: linear-gradient(135deg, rgba(167,139,250,0.08), rgba(34,211,238,0.05));
-      border: 1px solid rgba(167,139,250,0.2);
+    /* ── CONNECTION BANNER ───────────────────────────── */
+    .conn-banner {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
       border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
     }
-    .ai-header { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
-    .ai-badge {
-      font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
-      background: var(--purple-dim); color: var(--purple);
-      padding: 2px 8px; border-radius: 20px; border: 1px solid rgba(167,139,250,0.3);
+    .conn-banner.offline { background: #fff5f5; border: 1.5px solid #feb2b2; color: #c53030; }
+    .conn-banner.online  { background: #f0fff4; border: 1.5px solid #9ae6b4; color: #276749; }
+
+    /* ── RESPONSIVE ──────────────────────────────────── */
+    @media (max-width: 480px) {
+      .readings-grid { grid-template-columns: repeat(3, 1fr); gap: 7px; }
+      .reading-value { font-size: 20px; }
+      .env-grid { grid-template-columns: repeat(3, 1fr); gap: 7px; }
+      .energy-big { font-size: 24px; }
+      main { padding: 12px; gap: 12px; }
     }
-    .ai-saving { font-size: 11px; color: var(--green); font-weight: 600; }
-    .ai-text { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
-
-    /* OCCUPANCY */
-    .occ-rooms { display: flex; flex-direction: column; gap: 8px; }
-    .occ-row {
-      display: flex; align-items: center; gap: 10px;
-      padding: 8px 12px;
-      background: var(--bg-card2); border: 1px solid var(--border);
-      border-radius: 8px;
-    }
-    .occ-icon { font-size: 16px; }
-    .occ-name { font-size: 12px; font-weight: 500; flex: 1; }
-    .occ-status { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; }
-    .occ-occupied { background: var(--orange-dim); color: var(--orange); }
-    .occ-empty    { background: var(--green-dim);  color: var(--green); }
-
-    /* CO2 */
-    .co2-display { text-align: center; padding: 10px 0; }
-    .co2-value { font-family: var(--mono); font-size: 40px; font-weight: 700; color: var(--green); line-height: 1; }
-    .co2-label { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
-    .co2-bar-wrap { margin-top: 16px; }
-    .co2-bar-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
-    .co2-bar-track { height: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden; }
-    .co2-bar-fill  { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--green), var(--cyan)); transition: width 1s ease; }
-
-    /* LEADERBOARD */
-    .leaderboard { display: flex; flex-direction: column; gap: 8px; }
-    .lb-row {
-      display: flex; align-items: center; gap: 12px;
-      padding: 10px 12px;
-      background: var(--bg-card2); border: 1px solid var(--border); border-radius: 10px;
-    }
-    .lb-rank { font-size: 14px; font-weight: 700; width: 24px; text-align: center; flex-shrink: 0; }
-    .lb-name { font-size: 13px; font-weight: 500; flex: 1; }
-    .lb-score { font-family: var(--mono); font-size: 13px; color: var(--cyan); font-weight: 600; }
-    .lb-bar { width: 70px; height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; flex-shrink: 0; }
-    .lb-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--cyan), var(--purple)); }
-
-    /* FORECAST */
-    .forecast-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
-    .fstat { background: var(--bg-card2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center; }
-    .fstat-val { font-family: var(--mono); font-size: 22px; font-weight: 700; color: var(--purple); }
-    .fstat-label { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
-
-    /* HISTORY */
-    .hist-controls { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
-    .hist-btn {
-      padding: 8px 16px; border-radius: 8px;
-      border: 1px solid var(--border); background: var(--bg-card2);
-      color: var(--text-secondary); font-size: 12px; font-weight: 500;
-      cursor: pointer; transition: all 0.2s; font-family: var(--font);
-    }
-    .hist-btn:hover, .hist-btn.active {
-      background: var(--cyan-dim); border-color: var(--cyan); color: var(--cyan);
-    }
-
-    /* PROGRESS */
-    .progress-wrap { margin-top: 4px; }
-    .progress-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-secondary); margin-bottom: 5px; }
-    .progress-track { height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
-    .progress-fill { height: 100%; border-radius: 3px; transition: width 1.5s ease; }
-
-    /* NODE CARDS */
-    .node-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .node-card { background: var(--bg-card2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
-    .node-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-    .node-name { font-size: 12px; font-weight: 600; }
-    .node-ping { font-size: 10px; font-family: var(--mono); color: var(--green); }
-    .node-stat { font-size: 11px; color: var(--text-muted); }
-    .node-stat span { color: var(--text-secondary); font-family: var(--mono); }
-
-    /* TWO COL */
-    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
-
-    /* FOOTER */
-    .footer-strip {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 12px 28px;
-      border-top: 1px solid var(--border);
-      font-size: 11px; color: var(--text-muted);
-      position: relative; z-index: 1;
-    }
-
-    /* SCROLLBAR */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(56,189,248,0.2); border-radius: 3px; }
-
-    /* RESPONSIVE */
-    @media (max-width: 900px) {
-      .charts-grid { grid-template-columns: 1fr; }
-      .bottom-grid { grid-template-columns: 1fr 1fr; }
-      .two-col { grid-template-columns: 1fr; }
-    }
-    @media (max-width: 600px) {
-      .topbar { padding: 0 14px; }
-      .main { padding: 14px; }
-      .bottom-grid { grid-template-columns: 1fr; }
-      .metrics-grid { grid-template-columns: 1fr 1fr; }
-      .forecast-stats { grid-template-columns: 1fr; }
-      .node-grid { grid-template-columns: 1fr; }
-      .logo-sub { display: none; }
+    @media (max-width: 360px) {
+      .readings-grid { grid-template-columns: repeat(3, 1fr); }
+      .reading-value { font-size: 17px; }
+      .relay-btn { min-width: 68px; padding: 9px 12px; font-size: 13px; }
     }
   </style>
 </head>
 <body>
 
-<!-- TOPBAR -->
-<header class="topbar">
-  <div class="topbar-left">
-    <div class="logo-icon">⚡</div>
+<!-- ══ HEADER ═══════════════════════════════════════════ -->
+<header>
+  <div class="header-left">
+    <div class="header-icon">🌿</div>
     <div>
-      <div class="logo-text">Green<span>Campus</span> EMS</div>
-      <div class="logo-sub">IoT &amp; AI Energy Management System</div>
+      <div class="header-title">Green Campus EMS</div>
+      <div class="header-sub">IoT Energy Monitor · Lab A</div>
     </div>
   </div>
-  <div class="topbar-right">
-    <div class="live-badge"><div class="live-dot"></div>LIVE</div>
-    <div class="time-display" id="clockDisplay">--:--:--</div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <button id="soundBtn" onclick="toggleSound()" title="Toggle alert sounds"
+      style="background:rgba(255,255,255,0.15);border:none;border-radius:50px;
+             padding:6px 12px;color:white;font-size:13px;font-weight:700;
+             cursor:pointer;display:flex;align-items:center;gap:5px;">
+      🔔 <span id="soundLabel">Sound ON</span>
+    </button>
+    <div class="status-dot-wrap">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">Connecting…</span>
+    </div>
   </div>
 </header>
 
-<!-- NAV TABS -->
-<nav class="nav-tabs">
-  <div class="nav-tab active" id="tab-overview" onclick="showPage('overview')"><span class="tab-icon">📊</span>Overview</div>
-  <div class="nav-tab" id="tab-forecast" onclick="showPage('forecast')"><span class="tab-icon">🤖</span>AI Forecast</div>
-  <div class="nav-tab" id="tab-history"  onclick="showPage('history')"><span class="tab-icon">📈</span>History</div>
-  <div class="nav-tab" id="tab-control"  onclick="showPage('control')"><span class="tab-icon">🎛️</span>Control</div>
-  <div class="nav-tab" id="tab-alerts"   onclick="showPage('alerts')">
-    <span class="tab-icon">🔔</span>Alerts
-    <span id="alertCount" style="background:var(--red);color:white;font-size:10px;padding:1px 6px;border-radius:10px;margin-left:4px;vertical-align:middle;">3</span>
-  </div>
-</nav>
+<main>
 
-<main class="main">
-
-<!-- ══════ PAGE: OVERVIEW ══════ -->
-<div class="page active" id="page-overview">
-
-  <div class="status-bar">
-    <div class="status-pill"><div class="dot" style="background:var(--green)"></div>Node 1 — Lab A <small style="color:var(--text-muted);margin-left:4px">Online</small></div>
-    <div class="status-pill"><div class="dot" style="background:var(--green)"></div>Node 2 — Computer Lab <small style="color:var(--text-muted);margin-left:4px">Online</small></div>
-    <div class="status-pill"><div class="dot" style="background:var(--yellow);animation:pulse 2s infinite"></div>Node 3 — Office <small style="color:var(--text-muted);margin-left:4px">Degraded</small></div>
-    <div class="status-pill"><div class="dot" style="background:var(--text-muted)"></div>Node 4 — Corridor <small style="color:var(--text-muted);margin-left:4px">Offline</small></div>
+  <!-- ══ CONNECTION BANNER ══════════════════════════════ -->
+  <div class="conn-banner offline" id="connBanner">
+    📡 Connecting to device… Please wait.
   </div>
 
-  <div class="section-label">Live Readings — Node 1 (Lab A)</div>
-  <div class="metrics-grid">
-    <div class="metric-card" style="--accent-color:var(--cyan);--icon-bg:var(--cyan-dim)">
-      <div class="card-icon">⚡</div>
-      <div class="card-label">Voltage</div>
-      <div class="card-value"><span id="valVoltage">231.4</span><span class="card-unit">V</span></div>
-      <div class="card-sub">Nominal: 230V &nbsp;|&nbsp; Freq: <span id="valFreq">49.9</span> Hz</div>
-      <div class="card-trend trend-ok" id="trendV">✓ Normal</div>
-    </div>
-    <div class="metric-card" style="--accent-color:var(--orange);--icon-bg:var(--orange-dim)">
-      <div class="card-icon">🔌</div>
-      <div class="card-label">Current</div>
-      <div class="card-value"><span id="valCurrent">4.82</span><span class="card-unit">A</span></div>
-      <div class="card-sub">Power Factor: <span id="valPF">0.91</span></div>
-      <div class="card-trend trend-ok" id="trendI">✓ Normal</div>
-    </div>
-    <div class="metric-card" style="--accent-color:var(--purple);--icon-bg:var(--purple-dim)">
-      <div class="card-icon">💡</div>
-      <div class="card-label">Active Power</div>
-      <div class="card-value"><span id="valPower">1.11</span><span class="card-unit">kW</span></div>
-      <div class="card-sub">Reactive: <span id="valReactive">0.34</span> kVAR</div>
-      <div class="card-trend trend-up" id="trendP">↑ +8%</div>
-    </div>
-    <div class="metric-card" style="--accent-color:var(--green);--icon-bg:var(--green-dim)">
-      <div class="card-icon">📦</div>
-      <div class="card-label">Energy Today</div>
-      <div class="card-value"><span id="valEnergy">8.74</span><span class="card-unit">kWh</span></div>
-      <div class="card-sub">Cost ≈ ₹<span id="valCost">43.70</span> today</div>
-      <div class="card-trend trend-down">↓ Saving</div>
-    </div>
-    <div class="metric-card" style="--accent-color:var(--yellow);--icon-bg:var(--yellow-dim)">
-      <div class="card-icon">🌡️</div>
-      <div class="card-label">Temperature</div>
-      <div class="card-value"><span id="valTemp">28.4</span><span class="card-unit">°C</span></div>
-      <div class="card-sub">Humidity: <span id="valHum">62</span>%</div>
-      <div class="card-trend trend-ok">✓ Normal</div>
-    </div>
-    <div class="metric-card" style="--accent-color:var(--red);--icon-bg:var(--red-dim)">
-      <div class="card-icon">🌿</div>
-      <div class="card-label">CO₂ Footprint</div>
-      <div class="card-value"><span id="valCO2">7.17</span><span class="card-unit">kg</span></div>
-      <div class="card-sub">0.82 kg per kWh (India grid)</div>
-      <div class="card-trend trend-down">↓ Low</div>
-    </div>
-  </div>
-
-  <div class="charts-grid">
+  <!-- ══ POWER READINGS ═════════════════════════════════ -->
+  <div>
+    <div class="section-title">⚡ Live Power Readings</div>
     <div class="card">
-      <div class="chart-header">
-        <div>
-          <div class="chart-title">Real-Time Power Consumption</div>
-          <div class="chart-subtitle">Last 60 seconds — updates every 2s</div>
+      <div class="readings-grid">
+        <div class="reading-card">
+          <div class="reading-icon">🔌</div>
+          <div class="reading-value"><span id="valVoltage">--</span></div>
+          <div class="reading-unit">V</div>
+          <div class="reading-label">Voltage</div>
         </div>
-        <span class="chart-badge" style="background:var(--cyan-dim);color:var(--cyan)">Live</span>
+        <div class="reading-card">
+          <div class="reading-icon">💡</div>
+          <div class="reading-value"><span id="valPower">--</span></div>
+          <div class="reading-unit">kW</div>
+          <div class="reading-label">Power</div>
+        </div>
+        <div class="reading-card">
+          <div class="reading-icon">⚡</div>
+          <div class="reading-value"><span id="valCurrent">--</span></div>
+          <div class="reading-unit">A</div>
+          <div class="reading-label">Current</div>
+        </div>
+        <div class="reading-card">
+          <div class="reading-icon">🔁</div>
+          <div class="reading-value"><span id="valFreq">--</span></div>
+          <div class="reading-unit">Hz</div>
+          <div class="reading-label">Frequency</div>
+        </div>
+        <div class="reading-card">
+          <div class="reading-icon">📊</div>
+          <div class="reading-value"><span id="valPF">--</span></div>
+          <div class="reading-unit"></div>
+          <div class="reading-label">Power Factor</div>
+        </div>
+        <div class="reading-card">
+          <div class="reading-icon">🏷️</div>
+          <div class="reading-value"><span id="valRelayStatus">OFF</span></div>
+          <div class="reading-unit"></div>
+          <div class="reading-label">Socket</div>
+        </div>
       </div>
-      <canvas id="powerChart" height="100"></canvas>
     </div>
+  </div>
+
+  <!-- ══ ENERGY USED ════════════════════════════════════ -->
+  <div>
+    <div class="section-title">📦 Energy Used Today</div>
+    <div class="energy-row">
+      <div class="energy-box kwh">
+        <div class="energy-big"><span id="valEnergy">--</span> kWh</div>
+        <div class="energy-small">Total Energy Consumed</div>
+      </div>
+      <div class="energy-box cost">
+        <div class="energy-big">₹ <span id="valCost">--</span></div>
+        <div class="energy-small">Estimated Cost (₹5/kWh)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ROOM CONDITIONS ════════════════════════════════ -->
+  <div>
+    <div class="section-title">🌡️ Room Conditions</div>
     <div class="card">
-      <div class="chart-header">
-        <div>
-          <div class="chart-title">Node Comparison</div>
-          <div class="chart-subtitle">Current power by node (W)</div>
+      <div class="env-grid">
+        <div class="env-card temp">
+          <div class="env-icon">🌡️</div>
+          <div class="env-value"><span id="valTemp">--</span></div>
+          <div class="env-unit">°C</div>
+          <div class="env-label">Temperature</div>
+        </div>
+        <div class="env-card hum">
+          <div class="env-icon">💧</div>
+          <div class="env-value"><span id="valHum">--</span></div>
+          <div class="env-unit">%</div>
+          <div class="env-label">Humidity</div>
+        </div>
+        <div class="env-card pir" id="pirCard">
+          <div class="env-icon" id="pirIcon">🚶</div>
+          <div class="env-value" id="pirText">--</div>
+          <div class="env-unit"></div>
+          <div class="env-label">Motion</div>
         </div>
       </div>
-      <canvas id="nodeChart" height="200"></canvas>
     </div>
   </div>
 
-  <div class="bottom-grid">
+  <!-- ══ LIVE POWER CHART ═══════════════════════════════ -->
+  <div>
+    <div class="section-title">📈 Power Over Time</div>
     <div class="card">
-      <div class="chart-header">
-        <div class="chart-title">🧑 Room Occupancy</div>
-        <span style="font-size:11px;color:var(--text-muted)">PIR Sensors</span>
-      </div>
-      <div class="occ-rooms">
-        <div class="occ-row"><span class="occ-icon">🖥️</span><span class="occ-name">Lab A (Node 1)</span><span class="occ-status occ-occupied">Occupied</span></div>
-        <div class="occ-row"><span class="occ-icon">💻</span><span class="occ-name">Computer Lab (Node 2)</span><span class="occ-status occ-occupied">Occupied</span></div>
-        <div class="occ-row"><span class="occ-icon">🏢</span><span class="occ-name">Office Block (Node 3)</span><span class="occ-status occ-empty">Empty</span></div>
-        <div class="occ-row"><span class="occ-icon">🚶</span><span class="occ-name">Corridor (Node 4)</span><span class="occ-status occ-empty">Empty</span></div>
-      </div>
+      <div class="chart-label">Live power usage (last 60 seconds)</div>
+      <canvas id="powerChart" height="90"></canvas>
     </div>
+  </div>
 
+  <!-- ══ SOCKET CONTROL ════════════════════════════════ -->
+  <div>
+    <div class="section-title">🎛️ Device Control</div>
     <div class="card">
-      <div class="chart-header">
-        <div class="chart-title">🌿 Carbon Tracker</div>
-        <span style="font-size:11px;color:var(--text-muted)">Today</span>
-      </div>
-      <div class="co2-display">
-        <div class="co2-value" id="co2Big">7.17</div>
-        <div class="co2-label">kg CO₂ emitted today</div>
-      </div>
-      <div class="co2-bar-wrap">
-        <div class="co2-bar-label"><span>Target: 6 kg/day</span><span id="co2Pct">119%</span></div>
-        <div class="co2-bar-track"><div class="co2-bar-fill" id="co2Bar" style="width:100%;background:linear-gradient(90deg,var(--orange),var(--red))"></div></div>
-        <div style="margin-top:12px;">
-          <div class="co2-bar-label"><span>vs. Last Week</span><span style="color:var(--green)">↓ 12% saved</span></div>
-          <div class="co2-bar-track"><div class="co2-bar-fill" style="width:88%"></div></div>
+      <div class="relay-list">
+        <div class="relay-row" id="relayRow_r1">
+          <div class="relay-info">
+            <div class="relay-name">🔌 Lab A — Smart Socket</div>
+            <div class="relay-desc">Tap the button to switch the socket ON or OFF</div>
+          </div>
+          <button class="relay-btn off" id="r1" onclick="toggleRelay('r1','Lab A Socket')">OFF</button>
         </div>
       </div>
     </div>
+  </div>
 
+  <!-- ══ ALERTS ═════════════════════════════════════════ -->
+  <div>
+    <div class="section-title">🔔 Alerts &amp; Warnings</div>
     <div class="card">
-      <div class="chart-header">
-        <div class="chart-title">🏆 Efficiency Leaderboard</div>
-        <span style="font-size:11px;color:var(--text-muted)">This week</span>
-      </div>
-      <div class="leaderboard">
-        <div class="lb-row"><div class="lb-rank" style="color:var(--yellow)">🥇</div><div style="flex:1"><div class="lb-name">CSE Dept</div><div style="font-size:10px;color:var(--text-muted)">92/100</div></div><div class="lb-bar"><div class="lb-fill" style="width:92%"></div></div><div class="lb-score">92</div></div>
-        <div class="lb-row"><div class="lb-rank" style="color:var(--text-secondary)">🥈</div><div style="flex:1"><div class="lb-name">ECE Dept</div><div style="font-size:10px;color:var(--text-muted)">87/100</div></div><div class="lb-bar"><div class="lb-fill" style="width:87%"></div></div><div class="lb-score">87</div></div>
-        <div class="lb-row"><div class="lb-rank" style="color:var(--orange)">🥉</div><div style="flex:1"><div class="lb-name">MECH Dept</div><div style="font-size:10px;color:var(--text-muted)">79/100</div></div><div class="lb-bar"><div class="lb-fill" style="width:79%"></div></div><div class="lb-score">79</div></div>
-        <div class="lb-row"><div class="lb-rank" style="color:var(--text-muted)">4</div><div style="flex:1"><div class="lb-name">CIVIL Dept</div><div style="font-size:10px;color:var(--text-muted)">71/100</div></div><div class="lb-bar"><div class="lb-fill" style="width:71%"></div></div><div class="lb-score">71</div></div>
+      <div class="alerts-list" id="alertList">
+        <div class="no-alerts">✅ No alerts right now</div>
       </div>
     </div>
   </div>
-
-  <div class="section-label">All Nodes Status</div>
-  <div class="node-grid">
-    <div class="node-card"><div class="node-header"><div class="node-name">📡 Node 1 — Lab A</div><div class="node-ping">12ms</div></div><div class="node-stat">Power: <span id="n1p">1110</span> W &nbsp;|&nbsp; Temp: <span>28.4°C</span></div></div>
-    <div class="node-card"><div class="node-header"><div class="node-name">📡 Node 2 — Computer Lab</div><div class="node-ping">18ms</div></div><div class="node-stat">Power: <span>2340</span> W &nbsp;|&nbsp; Temp: <span>31.2°C</span></div></div>
-    <div class="node-card" style="opacity:0.7"><div class="node-header"><div class="node-name">📡 Node 3 — Office</div><div class="node-ping" style="color:var(--yellow)">145ms</div></div><div class="node-stat">Power: <span>870</span> W &nbsp;|&nbsp; Temp: <span>27.1°C</span></div></div>
-    <div class="node-card" style="opacity:0.4"><div class="node-header"><div class="node-name">📡 Node 4 — Corridor</div><div class="node-ping" style="color:var(--red)">Timeout</div></div><div class="node-stat">Last seen: <span>14:32:10</span></div></div>
-  </div>
-</div><!-- /overview -->
-
-
-<!-- ══════ PAGE: AI FORECAST ══════ -->
-<div class="page" id="page-forecast">
-  <div class="forecast-stats">
-    <div class="fstat"><div class="fstat-val">9.2 kWh</div><div class="fstat-label">Predicted Load (Next 24h)</div></div>
-    <div class="fstat"><div class="fstat-val" style="color:var(--green)">94.3%</div><div class="fstat-label">Model Accuracy (MAPE)</div></div>
-    <div class="fstat"><div class="fstat-val" style="color:var(--orange)">2–4 PM</div><div class="fstat-label">Predicted Peak Hour</div></div>
-  </div>
-
-  <div class="card" style="margin-bottom:20px;">
-    <div class="chart-header">
-      <div>
-        <div class="chart-title">🤖 LSTM — 24-Hour Energy Forecast</div>
-        <div class="chart-subtitle">Predicted (dashed purple) vs Actual (solid cyan) — kWh/hour</div>
-      </div>
-      <span class="chart-badge" style="background:var(--purple-dim);color:var(--purple)">AI Model</span>
-    </div>
-    <canvas id="forecastChart" height="110"></canvas>
-  </div>
-
-  <div class="two-col">
-    <div class="card">
-      <div class="chart-title" style="margin-bottom:6px;">📉 Isolation Forest — Anomaly Scores</div>
-      <div class="chart-subtitle" style="margin-bottom:14px;color:var(--text-muted)">Red bars = anomaly detected by AI model</div>
-      <canvas id="anomalyChart" height="160"></canvas>
-    </div>
-    <div class="card">
-      <div class="chart-title" style="margin-bottom:14px;">🤖 AI Recommendations</div>
-      <div class="ai-list">
-        <div class="ai-item">
-          <div class="ai-header"><span class="ai-badge">Occupancy</span><span class="ai-saving">Save ~₹12/day</span></div>
-          <div class="ai-text">Office block (Node 3) shows no occupancy for 3 hours. Auto-dim lights to 30% and raise AC setpoint by 2°C.</div>
-        </div>
-        <div class="ai-item">
-          <div class="ai-header"><span class="ai-badge">Peak Shift</span><span class="ai-saving">Save ~₹8/day</span></div>
-          <div class="ai-text">High demand predicted at 2–4 PM. Reschedule non-critical loads to 10–11 PM off-peak window.</div>
-        </div>
-        <div class="ai-item">
-          <div class="ai-header"><span class="ai-badge">Power Factor</span><span class="ai-saving">Penalty Risk</span></div>
-          <div class="ai-text">Node 2 power factor dipped to 0.79. Review inductive loads to avoid DISCOM penalty charges.</div>
-        </div>
-        <div class="ai-item">
-          <div class="ai-header"><span class="ai-badge">Tomorrow</span><span class="ai-saving">+19% predicted</span></div>
-          <div class="ai-text">Weekday tomorrow — predicted 11.4 kWh. Pre-cool rooms by 8 AM before peak occupancy.</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div><!-- /forecast -->
-
-
-<!-- ══════ PAGE: HISTORY ══════ -->
-<div class="page" id="page-history">
-  <div class="hist-controls">
-    <button class="hist-btn active" onclick="setHistRange(this,'daily')">Daily</button>
-    <button class="hist-btn" onclick="setHistRange(this,'weekly')">Weekly</button>
-    <button class="hist-btn" onclick="setHistRange(this,'monthly')">Monthly</button>
-  </div>
-
-  <div class="card" style="margin-bottom:20px;">
-    <div class="chart-header">
-      <div>
-        <div class="chart-title" id="histTitle">Hourly Energy — Today</div>
-        <div class="chart-subtitle">kWh consumed per time slot (cyan = today, purple = yesterday)</div>
-      </div>
-      <span class="chart-badge" style="background:var(--cyan-dim);color:var(--cyan)" id="histTotal">Total: 8.74 kWh</span>
-    </div>
-    <canvas id="histChart" height="110"></canvas>
-  </div>
-
-  <div class="two-col">
-    <div class="card">
-      <div class="chart-title" style="margin-bottom:16px;">⚡ Node-wise Breakdown</div>
-      <canvas id="pieChart" height="220"></canvas>
-    </div>
-    <div class="card">
-      <div class="chart-title" style="margin-bottom:16px;">📋 Daily Summary</div>
-      <div style="display:flex;flex-direction:column;gap:14px;margin-top:4px;">
-        <div class="progress-wrap">
-          <div class="progress-label"><span>Node 1 — Lab A</span><span style="color:var(--cyan)">3.2 kWh</span></div>
-          <div class="progress-track"><div class="progress-fill" style="width:70%;background:linear-gradient(90deg,var(--cyan),var(--purple))"></div></div>
-        </div>
-        <div class="progress-wrap">
-          <div class="progress-label"><span>Node 2 — Computer Lab</span><span style="color:var(--purple)">3.8 kWh</span></div>
-          <div class="progress-track"><div class="progress-fill" style="width:85%;background:linear-gradient(90deg,var(--purple),var(--orange))"></div></div>
-        </div>
-        <div class="progress-wrap">
-          <div class="progress-label"><span>Node 3 — Office</span><span style="color:var(--orange)">1.5 kWh</span></div>
-          <div class="progress-track"><div class="progress-fill" style="width:35%;background:linear-gradient(90deg,var(--orange),var(--yellow))"></div></div>
-        </div>
-        <div class="progress-wrap">
-          <div class="progress-label"><span>Node 4 — Corridor</span><span style="color:var(--text-muted)">0.24 kWh</span></div>
-          <div class="progress-track"><div class="progress-fill" style="width:10%;background:var(--text-muted)"></div></div>
-        </div>
-        <div style="margin-top:8px;padding:14px;background:var(--bg-card2);border-radius:10px;border:1px solid var(--border);display:flex;flex-direction:column;gap:8px;">
-          <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--text-muted)">Total Cost Today</span><span style="color:var(--green);font-weight:700;font-family:var(--mono)">₹ 43.70</span></div>
-          <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--text-muted)">vs. Yesterday</span><span style="color:var(--green)">↓ 12% saved</span></div>
-          <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:var(--text-muted)">Monthly Projection</span><span style="color:var(--cyan);font-family:var(--mono)">₹ 1,311</span></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div><!-- /history -->
-
-
-<!-- ══════ PAGE: CONTROL ══════ -->
-<div class="page" id="page-control">
-  <div class="two-col">
-    <div class="card">
-      <div class="chart-title" style="margin-bottom:16px;">🎛️ Appliance Control Panel</div>
-      <div class="relay-grid">
-        <div class="relay-item"><div><div class="relay-name">💡 Lab A — Main Lights</div><div class="relay-loc">Node 1 · Relay CH1</div></div><button class="relay-toggle on" id="r1" onclick="toggleRelay('r1','Lab A Lights')"></button></div>
-        <div class="relay-item"><div><div class="relay-name">❄️ Computer Lab — AC Unit</div><div class="relay-loc">Node 2 · Relay CH1</div></div><button class="relay-toggle on" id="r2" onclick="toggleRelay('r2','Computer Lab AC')"></button></div>
-        <div class="relay-item"><div><div class="relay-name">🖥️ Projector — Lab A</div><div class="relay-loc">Node 1 · Relay CH2</div></div><button class="relay-toggle" id="r3" onclick="toggleRelay('r3','Lab A Projector')"></button></div>
-        <div class="relay-item"><div><div class="relay-name">💡 Corridor Lights</div><div class="relay-loc">Node 4 · Relay CH1</div></div><button class="relay-toggle on" id="r4" onclick="toggleRelay('r4','Corridor Lights')"></button></div>
-        <div class="relay-item"><div><div class="relay-name">🌀 Exhaust Fan — Lab A</div><div class="relay-loc">Node 1 · Relay CH3</div></div><button class="relay-toggle" id="r5" onclick="toggleRelay('r5','Lab A Fan')"></button></div>
-        <div class="relay-item"><div><div class="relay-name">🔌 Server Room UPS Feed</div><div class="relay-loc">Node 2 · Relay CH2</div></div><button class="relay-toggle on" id="r6" onclick="toggleRelay('r6','Server UPS')"></button></div>
-      </div>
-    </div>
-
-    <div style="display:flex;flex-direction:column;gap:16px;">
-      <div class="card">
-        <div class="chart-title" style="margin-bottom:14px;">⏱️ Schedule Automation</div>
-        <div style="display:flex;flex-direction:column;gap:10px;">
-          <div class="relay-item"><div><div class="relay-name">🌙 Night Mode</div><div class="relay-loc">Turn off all lights at 10:00 PM</div></div><button class="relay-toggle on" id="sched1" onclick="toggleRelay('sched1','Night Mode')"></button></div>
-          <div class="relay-item"><div><div class="relay-name">☀️ Morning Startup</div><div class="relay-loc">Turn on corridor at 7:00 AM</div></div><button class="relay-toggle on" id="sched2" onclick="toggleRelay('sched2','Morning Mode')"></button></div>
-          <div class="relay-item"><div><div class="relay-name">📅 Weekend Mode</div><div class="relay-loc">Minimal power on Sat/Sun</div></div><button class="relay-toggle" id="sched3" onclick="toggleRelay('sched3','Weekend Mode')"></button></div>
-        </div>
-      </div>
-      <div class="card" style="flex:1">
-        <div class="chart-title" style="margin-bottom:12px;">📋 Control Log</div>
-        <div id="controlLog" style="display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto;">
-          <div style="font-size:11px;color:var(--text-muted);font-family:var(--mono)">[--:--:--] System initialized</div>
-          <div style="font-size:11px;color:var(--cyan);font-family:var(--mono)">[--:--:--] Lab A Lights → ON</div>
-          <div style="font-size:11px;color:var(--cyan);font-family:var(--mono)">[--:--:--] Computer Lab AC → ON</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div><!-- /control -->
-
-
-<!-- ══════ PAGE: ALERTS ══════ -->
-<div class="page" id="page-alerts">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-    <div class="section-label">Active Alerts &amp; Fault Log</div>
-    <button onclick="clearAlerts()" style="font-size:12px;padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card2);color:var(--text-secondary);cursor:pointer;font-family:var(--font);">Clear All</button>
-  </div>
-  <div class="alert-list" id="alertList">
-    <div class="alert-item error">
-      <div class="alert-icon">🔴</div>
-      <div><div class="alert-title">Node 4 — Connection Timeout</div><div class="alert-desc">Node 4 (Corridor) has not sent data for 52 minutes. Last ping failed. Check power supply or WiFi connection.</div><div class="alert-time">⏱ Node 4 · Connectivity · 52 min ago</div></div>
-    </div>
-    <div class="alert-item warn">
-      <div class="alert-icon">⚠️</div>
-      <div><div class="alert-title">Low Power Factor — Node 2</div><div class="alert-desc">Power factor dropped to 0.79 (threshold: 0.85). Possible inductive load imbalance in Computer Lab.</div><div class="alert-time">⏱ Node 2 · Power Quality · 18 min ago</div></div>
-    </div>
-    <div class="alert-item warn">
-      <div class="alert-icon">⚡</div>
-      <div><div class="alert-title">AI Anomaly Detected — Node 1</div><div class="alert-desc">Isolation Forest flagged unusual energy spike. Power was 2.3× above normal for this time slot at 22:47.</div><div class="alert-time">⏱ Node 1 · AI Anomaly · 39 min ago</div></div>
-    </div>
-    <div class="alert-item info">
-      <div class="alert-icon">ℹ️</div>
-      <div><div class="alert-title">Node 3 — High MQTT Latency</div><div class="alert-desc">Node 3 (Office) latency is 145ms, above 30ms normal. WiFi signal may be weak. Consider adding a repeater.</div><div class="alert-time">⏱ Node 3 · Network · 1 hr ago</div></div>
-    </div>
-    <div class="alert-item ok">
-      <div class="alert-icon">✅</div>
-      <div><div class="alert-title">Daily Energy Goal Achieved!</div><div class="alert-desc">Campus consumed 8.74 kWh today vs. 10.2 kWh yesterday — 14.3% reduction. Weekly green target on track.</div><div class="alert-time">⏱ All Nodes · Achievement · 3 hr ago</div></div>
-    </div>
-  </div>
-</div><!-- /alerts -->
 
 </main>
 
-<div class="footer-strip">
-  <span>🌿 Green Campus EMS &nbsp;·&nbsp; IoT &amp; AI Final Year B.Tech Project &nbsp;·&nbsp; 2026</span>
-  <span>Refresh: <span style="color:var(--green);font-family:var(--mono)">2s</span> &nbsp;|&nbsp; MQTT: <span style="color:var(--green)">Connected</span></span>
-</div>
-
-
 <script>
-// ── NAVIGATION ──────────────────────────────────────────────
-function showPage(name) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('page-' + name).classList.add('active');
-  document.getElementById('tab-' + name).classList.add('active');
-}
-
-// ── CLOCK ───────────────────────────────────────────────────
-function updateClock() {
-  document.getElementById('clockDisplay').textContent =
-    new Date().toLocaleTimeString('en-IN', { hour12: false });
-}
-setInterval(updateClock, 1000); updateClock();
-
-// ── CHART.JS DEFAULTS ───────────────────────────────────────
-Chart.defaults.color = '#94a3b8';
-Chart.defaults.borderColor = 'rgba(56,189,248,0.08)';
-Chart.defaults.font.family = "'Inter', sans-serif";
-
-// ── REAL-TIME POWER CHART ───────────────────────────────────
-const powerLabels = Array.from({length: 30}, (_, i) => (30 - i) + 's').reverse();
-const powerData   = Array.from({length: 30}, () => +(0.9 + Math.random() * 0.5).toFixed(2));
+// ── POWER CHART SETUP ────────────────────────────────────────
+const powerLabels = Array.from({length: 30}, (_, i) => '');
+const powerData   = new Array(30).fill(0);
 
 const powerChart = new Chart(document.getElementById('powerChart'), {
   type: 'line',
   data: {
     labels: powerLabels,
     datasets: [{
-      label: 'Power (kW)', data: powerData,
-      borderColor: '#22d3ee', backgroundColor: 'rgba(34,211,238,0.08)',
-      borderWidth: 2, fill: true, tension: 0.4,
-      pointRadius: 0, pointHoverRadius: 4,
+      label: 'Power (kW)',
+      data: powerData,
+      borderColor: '#48bb78',
+      backgroundColor: 'rgba(72,187,120,0.12)',
+      borderWidth: 2.5,
+      pointRadius: 0,
+      fill: true,
+      tension: 0.4
     }]
   },
   options: {
     animation: false,
-    plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
-    scales: {
-      x: { grid: { display: false }, ticks: { maxTicksLimit: 6, font: { size: 10 } } },
-      y: { min: 0, max: 2.5, ticks: { font: { size: 10 }, callback: v => v + ' kW' } }
-    }
-  }
-});
-
-// ── NODE BAR CHART ──────────────────────────────────────────
-const nodeChart = new Chart(document.getElementById('nodeChart'), {
-  type: 'bar',
-  data: {
-    labels: ['Lab A', 'Comp Lab', 'Office', 'Corridor'],
-    datasets: [{
-      label: 'Power (W)',
-      data: [1110, 2340, 870, 0],
-      backgroundColor: ['rgba(34,211,238,0.7)','rgba(167,139,250,0.7)','rgba(251,146,60,0.7)','rgba(71,85,105,0.4)'],
-      borderColor:     ['#22d3ee','#a78bfa','#fb923c','#475569'],
-      borderWidth: 1, borderRadius: 6,
-    }]
-  },
-  options: {
     plugins: { legend: { display: false } },
     scales: {
-      x: { grid: { display: false }, ticks: { font: { size: 10 } } },
-      y: { ticks: { callback: v => v + 'W', font: { size: 10 } } }
+      x: { display: false },
+      y: {
+        min: 0,
+        ticks: { font: { size: 10 }, callback: v => v + ' kW' },
+        grid: { color: 'rgba(0,0,0,0.05)' }
+      }
     }
   }
 });
 
-// ── LSTM FORECAST CHART ─────────────────────────────────────
-const fLabels  = ['12a','1a','2a','3a','4a','5a','6a','7a','8a','9a','10a','11a','12p','1p','2p','3p','4p','5p','6p','7p','8p','9p','10p','11p'];
-const fActual  = [0.3,0.25,0.2,0.2,0.18,0.22,0.4,0.9,1.4,1.6,1.8,2.0,2.1,2.3,2.5,2.6,2.4,2.1,1.7,1.3,1.0,0.7,0.5,0.35];
-const fPredict = [0.28,0.23,0.22,0.21,0.19,0.24,0.42,0.88,1.42,1.55,1.78,2.05,2.08,2.28,2.52,2.58,2.38,2.08,1.72,1.28,0.98,0.72,0.52,0.38];
+// ── ALERT HELPER ─────────────────────────────────────────────
+const alertList = document.getElementById('alertList');
+let alertsShown = [];
 
-new Chart(document.getElementById('forecastChart'), {
-  type: 'line',
-  data: {
-    labels: fLabels,
-    datasets: [
-      { label: 'Actual (kWh)', data: fActual, borderColor: '#22d3ee', backgroundColor: 'rgba(34,211,238,0.06)', borderWidth: 2.5, fill: true, tension: 0.4, pointRadius: 2 },
-      { label: 'LSTM Predicted', data: fPredict, borderColor: '#a78bfa', borderDash: [6,4], backgroundColor: 'rgba(167,139,250,0.04)', borderWidth: 2, fill: false, tension: 0.4, pointRadius: 0 }
-    ]
-  },
-  options: {
-    plugins: { legend: { position: 'top', labels: { usePointStyle: true, font: { size: 11 } } }, tooltip: { mode: 'index', intersect: false } },
-    scales: {
-      x: { grid: { display: false }, ticks: { font: { size: 10 } } },
-      y: { ticks: { callback: v => v + ' kWh', font: { size: 10 } } }
-    }
-  }
-});
+function addAlert(type, icon, text) {
+  const key = type + text;
+  if (alertsShown.includes(key)) return;
+  alertsShown.push(key);
 
-// ── ANOMALY SCORE CHART ─────────────────────────────────────
-const aScores = [0.12,0.15,0.11,0.13,0.10,0.09,0.14,0.82,0.11,0.12,0.10,0.13,0.11,0.10,0.09,0.10,0.12,0.11,0.13,0.10,0.09,0.11,0.12,0.10];
-new Chart(document.getElementById('anomalyChart'), {
-  type: 'bar',
-  data: {
-    labels: fLabels,
-    datasets: [{ label: 'Anomaly Score', data: aScores, backgroundColor: aScores.map(v => v > 0.4 ? 'rgba(248,113,113,0.85)' : 'rgba(74,222,128,0.65)'), borderRadius: 4, borderWidth: 0 }]
-  },
-  options: {
-    plugins: { legend: { display: false } },
-    scales: {
-      x: { grid: { display: false }, ticks: { font: { size: 9 }, maxTicksLimit: 12 } },
-      y: { max: 1.0, ticks: { font: { size: 9 } } }
-    }
-  }
-});
+  const pill = document.createElement('div');
+  pill.className = `alert-pill ${type}`;
+  const now = new Date().toLocaleTimeString('en-IN', { hour12: true, hour: '2-digit', minute: '2-digit' });
+  pill.innerHTML = `<span class="alert-icon">${icon}</span><span class="alert-text">${text}</span><span class="alert-time">${now}</span>`;
+  
+  // Remove "no alerts" placeholder
+  const noAlert = alertList.querySelector('.no-alerts');
+  if (noAlert) noAlert.remove();
 
-// ── HISTORY CHART ───────────────────────────────────────────
-let histChart;
-function buildHistChart(range) {
-  if (histChart) histChart.destroy();
-  let labels, d1, d2;
-  if (range === 'daily') {
-    labels = ['6a','7a','8a','9a','10a','11a','12p','1p','2p','3p','4p','5p','6p','7p','8p'];
-    d1 = [0.1,0.3,0.8,1.1,1.4,1.6,1.8,1.9,2.1,2.3,2.1,1.9,1.5,1.2,0.9];
-    d2 = [0.0,0.2,0.6,0.9,1.2,1.4,1.6,1.7,1.9,2.1,1.9,1.7,1.3,1.0,0.7];
-    document.getElementById('histTitle').textContent = 'Hourly Energy — Today';
-    document.getElementById('histTotal').textContent = 'Total: 8.74 kWh';
-  } else if (range === 'weekly') {
-    labels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-    d1 = [8.4,9.1,8.7,10.2,9.8,5.1,3.2]; d2 = [7.8,8.5,8.2,9.6,9.0,4.5,2.9];
-    document.getElementById('histTitle').textContent = 'Daily Energy — This Week';
-    document.getElementById('histTotal').textContent = 'Total: 54.5 kWh';
-  } else {
-    labels = ['Week 1','Week 2','Week 3','Week 4'];
-    d1 = [54.5,62.1,58.3,49.8]; d2 = [50.2,57.0,54.1,44.2];
-    document.getElementById('histTitle').textContent = 'Weekly Energy — This Month';
-    document.getElementById('histTotal').textContent = 'Total: 224.7 kWh';
-  }
-  histChart = new Chart(document.getElementById('histChart'), {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        { label: 'This Period', data: d1, backgroundColor: 'rgba(34,211,238,0.65)', borderRadius: 5, borderWidth: 0 },
-        { label: 'Last Period', data: d2, backgroundColor: 'rgba(167,139,250,0.35)', borderRadius: 5, borderWidth: 0 }
-      ]
-    },
-    options: {
-      plugins: { legend: { position: 'top', labels: { font: { size: 11 }, usePointStyle: true } } },
-      scales: { x: { grid: { display: false }, ticks: { font: { size: 10 } } }, y: { ticks: { font: { size: 10 } } } }
-    }
-  });
-}
-buildHistChart('daily');
-function setHistRange(el, range) {
-  document.querySelectorAll('.hist-btn').forEach(b => b.classList.remove('active'));
-  el.classList.add('active'); buildHistChart(range);
+  alertList.prepend(pill);
+  // Keep only 5 alerts
+  while (alertList.children.length > 5) alertList.lastChild.remove();
 }
 
-// ── DOUGHNUT PIE CHART ──────────────────────────────────────
-new Chart(document.getElementById('pieChart'), {
-  type: 'doughnut',
-  data: {
-    labels: ['Lab A', 'Computer Lab', 'Office', 'Corridor'],
-    datasets: [{
-      data: [3.2, 3.8, 1.5, 0.24],
-      backgroundColor: ['rgba(34,211,238,0.75)','rgba(167,139,250,0.75)','rgba(251,146,60,0.75)','rgba(71,85,105,0.5)'],
-      borderColor: '#080c14', borderWidth: 3,
-    }]
-  },
-  options: {
-    cutout: '62%',
-    plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, usePointStyle: true, padding: 14 } } }
-  }
-});
+// ── APPLY SENSOR DATA TO PAGE ─────────────────────────────────
+let energyAcc = 0;
 
-// ── LIVE DATA SIMULATION ────────────────────────────────────
-// Replace updateLive() body with real WebSocket/MQTT data when hardware is ready
-let energyAcc = 8.74;
-
-function rand(min, max) { return +(min + Math.random() * (max - min)).toFixed(2); }
-
-function updateLive() {
-  const voltage = rand(228, 233);
-  const current = rand(4.2, 5.6);
-  const pf      = rand(0.88, 0.95);
-  const power   = +((voltage * current * pf) / 1000).toFixed(3);
-  const freq    = rand(49.8, 50.2);
-  const temp    = rand(27.5, 29.5);
-  const hum     = Math.floor(rand(58, 68));
-  energyAcc    += power / 1800;
-  const co2     = +(energyAcc * 0.82).toFixed(2);
+function applyData(d) {
+  // Power readings
+  const voltage = (d.voltage > 0)      ? d.voltage.toFixed(1) : '--';
+  const current = (d.current >= 0)     ? d.current.toFixed(2) : '--';
+  const power   = (d.power_kw >= 0)    ? d.power_kw.toFixed(3) : '--';
+  const freq    = (d.frequency > 0)    ? d.frequency.toFixed(1) : '--';
+  const pf      = (d.power_factor > 0) ? d.power_factor.toFixed(2) : '--';
+  const energy  = (d.energy_kwh > 0)   ? d.energy_kwh : energyAcc;
 
   document.getElementById('valVoltage').textContent = voltage;
   document.getElementById('valCurrent').textContent = current;
-  document.getElementById('valPF').textContent      = pf;
   document.getElementById('valPower').textContent   = power;
   document.getElementById('valFreq').textContent    = freq;
-  document.getElementById('valTemp').textContent    = temp;
-  document.getElementById('valHum').textContent     = hum;
-  document.getElementById('valEnergy').textContent  = energyAcc.toFixed(2);
-  document.getElementById('valCost').textContent    = (energyAcc * 5).toFixed(2);
-  document.getElementById('valCO2').textContent     = co2;
-  document.getElementById('co2Big').textContent     = co2;
-  document.getElementById('co2Pct').textContent     = Math.round((co2 / 6) * 100) + '%';
+  document.getElementById('valPF').textContent      = pf;
 
-  // Trend
-  const pHigh = power > 1.3;
-  document.getElementById('trendP').textContent  = pHigh ? '↑ High' : '✓ Normal';
-  document.getElementById('trendP').className    = 'card-trend ' + (pHigh ? 'trend-up' : 'trend-ok');
-  const vHigh = voltage > 232;
-  document.getElementById('trendV').textContent  = vHigh ? '⚠ High' : '✓ Normal';
-  document.getElementById('trendV').className    = 'card-trend ' + (vHigh ? 'trend-up' : 'trend-ok');
+  // Energy & cost
+  energyAcc = +energy;
+  document.getElementById('valEnergy').textContent = energyAcc.toFixed(3);
+  document.getElementById('valCost').textContent   = (energyAcc * 5).toFixed(2);
 
-  // Update live chart
-  powerData.shift(); powerData.push(power);
+  // Environment
+  if (d.temperature > 0) {
+    document.getElementById('valTemp').textContent = d.temperature.toFixed(1);
+    if (d.temperature > 35) addAlert('warn', '🌡️', `High temperature: ${d.temperature.toFixed(1)}°C in Lab A`);
+  }
+  if (d.humidity > 0) {
+    document.getElementById('valHum').textContent = Math.round(d.humidity);
+  }
+
+  // Motion (PIR)
+  if (d.motion !== undefined && d.motion !== null) {
+    const occupied = Number(d.motion) === 1;
+    const pirCard  = document.getElementById('pirCard');
+    document.getElementById('pirIcon').textContent = occupied ? '🏃' : '😴';
+    document.getElementById('pirText').textContent = occupied ? 'YES' : 'NO';
+    pirCard.className = 'env-card pir' + (occupied ? ' motion' : '');
+  }
+
+  // Relay status
+  if (d.relay !== undefined) {
+    const isOn = d.relay === 'on' || d.relay === true || d.relay === 1;
+    document.getElementById('valRelayStatus').textContent = isOn ? 'ON' : 'OFF';
+    const btn = document.getElementById('r1');
+    const row = document.getElementById('relayRow_r1');
+    if (isOn) {
+      btn.textContent = 'ON';
+      btn.className = 'relay-btn on';
+      row.classList.add('active');
+    } else {
+      btn.textContent = 'OFF';
+      btn.className = 'relay-btn off';
+      row.classList.remove('active');
+    }
+  }
+
+  // Live chart
+  powerData.shift();
+  powerData.push(d.power_kw || 0);
   powerChart.data.datasets[0].data = [...powerData];
-  powerChart.update();
+  powerChart.update('none');
 
-  // Update node bar 1
-  nodeChart.data.datasets[0].data[0] = Math.round(power * 1000);
-  nodeChart.update();
-
-  document.getElementById('n1p').textContent = Math.round(power * 1000);
+  // Alerts from sensor data
+  if (d.power_factor > 0 && d.power_factor < 0.80) {
+    addAlert('warn', '⚠️', `Low power factor: ${d.power_factor.toFixed(2)} — inefficient load detected`);
+  }
+  if (d.voltage > 0 && (d.voltage < 200 || d.voltage > 260)) {
+    addAlert('error', '🚨', `Voltage out of range: ${d.voltage.toFixed(1)}V`);
+  }
 }
-setInterval(updateLive, 2000);
 
-// ── RELAY CONTROL ────────────────────────────────────────────
+// ── CONNECTION STATUS HELPERS ─────────────────────────────────
+function setConnected() {
+  document.getElementById('statusDot').classList.add('live');
+  document.getElementById('statusText').textContent = 'Live';
+  const b = document.getElementById('connBanner');
+  b.className = 'conn-banner online';
+  b.textContent = '✅ Connected to NodeMCU — receiving live data';
+}
+function setDisconnected() {
+  document.getElementById('statusDot').classList.remove('live');
+  document.getElementById('statusText').textContent = 'Offline';
+  const b = document.getElementById('connBanner');
+  b.className = 'conn-banner offline';
+  b.textContent = '📡 Connecting to device… Make sure server.py is running.';
+}
+
+// ── WEBSOCKET ─────────────────────────────────────────────────
+let useRealData = false;
+let wsRetries   = 0;
+
+function connectWebSocket() {
+  let host = location.host;
+  if (!host || host.includes('github.io')) host = 'localhost:8000';
+  const WS_URL = 'ws://' + host + '/ws';
+  let ws;
+  try { ws = new WebSocket(WS_URL); } catch(e) { return; }
+
+  ws.onopen = () => {
+    useRealData = true;
+    wsRetries   = 0;
+    setConnected();
+  };
+
+  ws.onmessage = (event) => {
+    try {
+      const payload = JSON.parse(event.data);
+      let d = null;
+      if (payload.nodes && Array.isArray(payload.nodes))
+        d = payload.nodes.find(n => n.node_id === 'node1') || payload.nodes[0];
+      else if (payload.node1)        d = payload.node1;
+      else if (payload.nodes_by_id)  d = payload.nodes_by_id.node1;
+      if (d) { useRealData = true; applyData(d); }
+    } catch(e) {}
+  };
+
+  ws.onerror = () => { useRealData = false; setDisconnected(); };
+  ws.onclose = () => {
+    useRealData = false;
+    setDisconnected();
+    wsRetries++;
+    setTimeout(connectWebSocket, Math.min(5000 * wsRetries, 30000));
+  };
+}
+connectWebSocket();
+
+// ── RELAY CONTROL ─────────────────────────────────────────────
 function toggleRelay(id, name) {
   const btn = document.getElementById(id);
-  btn.classList.toggle('on');
-  const state = btn.classList.contains('on') ? 'ON' : 'OFF';
-  const now   = new Date().toLocaleTimeString('en-IN', { hour12: false });
-  const log   = document.getElementById('controlLog');
-  const entry = document.createElement('div');
-  entry.style.cssText = `font-size:11px;color:${state==='ON'?'var(--cyan)':'var(--orange)'};font-family:var(--mono)`;
-  entry.textContent   = `[${now}] ${name} → ${state}`;
-  log.prepend(entry);
+  const row = document.getElementById('relayRow_' + id);
+  const isOn = btn.classList.contains('on');
+  const newState = isOn ? 'off' : 'on';
+
+  // Update button immediately
+  if (!isOn) {
+    btn.textContent = 'ON';
+    btn.className = 'relay-btn on';
+    row.classList.add('active');
+    document.getElementById('valRelayStatus').textContent = 'ON';
+  } else {
+    btn.textContent = 'OFF';
+    btn.className = 'relay-btn off';
+    row.classList.remove('active');
+    document.getElementById('valRelayStatus').textContent = 'OFF';
+  }
+
+  // Send to backend
+  let host = location.host;
+  if (!host || host.includes('github.io')) host = 'localhost:8000';
+  fetch(`http://${host}/api/control/relay`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ node_id: 'node1', command: newState })
+  })
+  .then(r => r.json())
+  .then(res => {
+    addAlert('ok', '✅', `${name} switched ${newState.toUpperCase()} successfully`);
+  })
+  .catch(() => {
+    addAlert('error', '❌', `Could not reach server — check if server.py is running`);
+  });
 }
 
-// ── CLEAR ALERTS ─────────────────────────────────────────────
-function clearAlerts() {
-  document.getElementById('alertList').innerHTML =
-    '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:14px">✅ No active alerts</div>';
-  const badge = document.getElementById('alertCount');
-  badge.textContent = '0';
-  badge.style.background = 'var(--green)';
+// ── SOUND ENGINE (Web Audio API — no external files needed) ───
+let audioCtx      = null;
+let soundOn       = true;
+
+// Unlock audio context on first user interaction (browser requirement)
+document.addEventListener('click', () => {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}, { once: true });
+
+function toggleSound() {
+  soundOn = !soundOn;
+  document.getElementById('soundBtn').innerHTML =
+    (soundOn ? '🔔' : '🔕') + ' <span id="soundLabel">' + (soundOn ? 'Sound ON' : 'Sound OFF') + '</span>';
 }
+
+function playTone(type) {
+  if (!soundOn) return;
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+
+  const ctx = audioCtx;
+  const t   = ctx.currentTime;
+
+  function beep(freq, start, dur, vol, shape) {
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = shape || 'sine';
+    osc.frequency.setValueAtTime(freq, start);
+    gain.gain.setValueAtTime(0, start);
+    gain.gain.linearRampToValueAtTime(vol, start + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+    osc.start(start);
+    osc.stop(start + dur + 0.05);
+  }
+
+  if (type === 'error') {
+    // 🚨 Urgent: high-pitched double beep
+    beep(880, t,        0.25, 0.5, 'square');
+    beep(880, t + 0.30, 0.25, 0.5, 'square');
+  } else if (type === 'warn') {
+    // ⚠️  Warning: single medium beep
+    beep(520, t, 0.35, 0.4, 'sine');
+  } else if (type === 'ok') {
+    // ✅ Success: soft rising two-tone chime
+    beep(440, t,        0.15, 0.3, 'sine');
+    beep(660, t + 0.18, 0.25, 0.3, 'sine');
+  }
+}
+
+// Wrap addAlert so every alert also plays the right sound
+const _addAlertBase = addAlert;
+window.addAlert = function(type, icon, text) {
+  _addAlertBase(type, icon, text);
+  playTone(type);
+};
 </script>
 </body>
 </html>
