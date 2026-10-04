@@ -487,20 +487,52 @@ function applyData(d) {
   }
 }
 
-// ── CONNECTION STATUS HELPERS ─────────────────────────────────
-function setConnected() {
-  document.getElementById('statusDot').classList.add('live');
-  document.getElementById('statusText').textContent = 'Live';
-  const b = document.getElementById('connBanner');
-  b.className = 'conn-banner online';
-  b.textContent = '✅ Connected to NodeMCU — receiving live data';
-}
-function setDisconnected() {
+// ── CONNECTION STATUS — 3 STATES ──────────────────────────────
+// State 1: Backend offline (WebSocket not connected)
+// State 2: Backend online but NodeMCU not sending data
+// State 3: NodeMCU live (real sensor data arriving)
+
+let lastHardwareDataTime = 0;   // timestamp of last real NodeMCU packet
+let hardwareWatchdog = null;    // interval timer
+
+function setBackendOffline() {
   document.getElementById('statusDot').classList.remove('live');
   document.getElementById('statusText').textContent = 'Offline';
   const b = document.getElementById('connBanner');
   b.className = 'conn-banner offline';
-  b.textContent = '📡 Connecting to device… Make sure server.py is running.';
+  b.textContent = '📡 Connecting to server… Make sure server.py is running.';
+}
+
+function setWaitingForHardware() {
+  document.getElementById('statusDot').classList.remove('live');
+  document.getElementById('statusText').textContent = 'Waiting';
+  const b = document.getElementById('connBanner');
+  b.className = 'conn-banner offline';
+  b.style.background = '#fffbeb';
+  b.style.borderColor = '#fbd38d';
+  b.style.color = '#92400e';
+  b.textContent = '⚠️ Server connected — but NodeMCU is OFF or not sending data.';
+}
+
+function setNodeMCULive() {
+  document.getElementById('statusDot').classList.add('live');
+  document.getElementById('statusText').textContent = 'Live';
+  const b = document.getElementById('connBanner');
+  b.className = 'conn-banner online';
+  b.style = '';   // clear any inline overrides
+  b.textContent = '✅ Connected to NodeMCU — receiving live data';
+}
+
+// Watchdog: called every 10s to check if hardware data is still coming
+function startHardwareWatchdog() {
+  if (hardwareWatchdog) clearInterval(hardwareWatchdog);
+  hardwareWatchdog = setInterval(() => {
+    const secondsSinceData = (Date.now() - lastHardwareDataTime) / 1000;
+    if (lastHardwareDataTime === 0 || secondsSinceData > 15) {
+      // No real data in 15 seconds → NodeMCU must be off
+      setWaitingForHardware();
+    }
+  }, 10000);
 }
 
 // ── WEBSOCKET ─────────────────────────────────────────────────
@@ -515,9 +547,10 @@ function connectWebSocket() {
   try { ws = new WebSocket(WS_URL); } catch(e) { return; }
 
   ws.onopen = () => {
-    useRealData = true;
-    wsRetries   = 0;
-    setConnected();
+    wsRetries = 0;
+    // Backend is reachable, but we don't know about NodeMCU yet
+    setWaitingForHardware();
+    startHardwareWatchdog();
   };
 
   ws.onmessage = (event) => {
@@ -528,14 +561,32 @@ function connectWebSocket() {
         d = payload.nodes.find(n => n.node_id === 'node1') || payload.nodes[0];
       else if (payload.node1)        d = payload.node1;
       else if (payload.nodes_by_id)  d = payload.nodes_by_id.node1;
-      if (d) { useRealData = true; applyData(d); }
+
+      if (d) {
+        // Always apply data so readings update on screen
+        applyData(d);
+
+        // Mark as NodeMCU live only when real sensor values are present
+        const hasRealData = (Number(d.voltage) > 0 || Number(d.temperature) > 0 || Number(d.current) > 0);
+        if (hasRealData) {
+          useRealData = true;
+          lastHardwareDataTime = Date.now();
+          setNodeMCULive();
+        }
+      }
     } catch(e) {}
   };
 
-  ws.onerror = () => { useRealData = false; setDisconnected(); };
+  ws.onerror = () => {
+    useRealData = false;
+    if (hardwareWatchdog) clearInterval(hardwareWatchdog);
+    setBackendOffline();
+  };
   ws.onclose = () => {
     useRealData = false;
-    setDisconnected();
+    lastHardwareDataTime = 0;
+    if (hardwareWatchdog) clearInterval(hardwareWatchdog);
+    setBackendOffline();
     wsRetries++;
     setTimeout(connectWebSocket, Math.min(5000 * wsRetries, 30000));
   };
