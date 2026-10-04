@@ -542,7 +542,8 @@ let wsRetries   = 0;
 function connectWebSocket() {
   let host = location.host;
   if (!host || host.includes('github.io')) host = 'localhost:8000';
-  const WS_URL = 'ws://' + host + '/ws';
+  const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+  const WS_URL = protocol + host + '/ws';
   let ws;
   try { ws = new WebSocket(WS_URL); } catch(e) { return; }
 
@@ -614,9 +615,7 @@ function toggleRelay(id, name) {
   }
 
   // Send to backend
-  let host = location.host;
-  if (!host || host.includes('github.io')) host = 'localhost:8000';
-  fetch(`http://${host}/api/control/relay`, {
+  fetch(`/api/control/relay`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ node_id: 'node1', command: newState })
