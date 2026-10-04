@@ -37,7 +37,8 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 MQTT_HOST      = "broker.emqx.io"
 MQTT_PORT      = 1883
-MQTT_CLIENT_ID = "ems-backend"
+import uuid
+MQTT_CLIENT_ID = f"ems-backend-{uuid.uuid4().hex[:8]}"
 MQTT_KEEPALIVE = 60          # seconds between ping packets
 RECONNECT_DELAY = 5          # seconds to wait before reconnect attempt
 
