@@ -28,7 +28,7 @@ from typing import Optional
 
 import paho.mqtt.client as mqtt
 
-import database
+from backend import database
 
 logger = logging.getLogger(__name__)
 
@@ -172,7 +172,7 @@ def _handle_energy(node_id: str, data: dict):
 
     # Check thresholds and auto-generate alerts
     try:
-        import alerts as alert_module
+        from backend import alerts as alert_module
         triggered = alert_module.check_thresholds(data)
         for alert in triggered:
             database.insert_alert(alert)

@@ -46,8 +46,8 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-import database
-import mqtt_client
+from backend import database
+from backend import mqtt_client
 
 # ---------------------------------------------------------------------------
 # Logging configuration
